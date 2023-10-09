@@ -1,3 +1,7 @@
+inventories/**
+
+
+
 # Local .terraform directories
 **/.terraform/*
 

@@ -1,0 +1,36 @@
+# Ansible managed
+
+ui = true
+
+storage "postgresql" {
+  connection_url = "postgres://vault:vault@{{ pg_ip }}:5432/vault"
+  max_parallel = 20
+  ha_enabled = "true"
+}
+
+#api_addr = "https://{{ inventory_hostname }}:8200"
+#cluster_addr = "https://{{ inventory_hostname }}:8201"
+api_addr = "http://{{ inventory_hostname }}:8200"
+cluster_addr = "http://{{ inventory_hostname }}:8201"
+
+# HTTPS listener
+listener "tcp" {
+  address       = "{{ inventory_hostname }}:8200"
+  tls_disable   = "true"
+#  tls_disable   = "false"
+#  tls_cert_file = "/opt/vault/tls/tls.crt"
+#  tls_key_file  = "/opt/vault/tls/tls.key"
+  tls_disable_client_certs  = "true"
+  telemetry {
+    unauthenticated_metrics_access = "true"
+  }
+}
+
+telemetry {
+  prometheus_retention_time = "30s"
+}
+
+listener "tcp" {
+  address       = "127.0.0.1:8200"
+  tls_disable	= "true"
+}

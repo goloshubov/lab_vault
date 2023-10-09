@@ -1,0 +1,53 @@
+---
+
+- name: Wait for system to become reachable
+  ansible.builtin.wait_for_connection:
+- name: Set a hostname specifying strategy
+  become: true
+  ansible.builtin.hostname:
+    name: "{{ node_name }}"
+    use: systemd
+- name: Uname
+  command: uname -a
+- name: Install Vault
+  become: yes
+  command: yum install -y yum-utils
+- name: Install Vault
+  become: yes
+  command: yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+- name: Install Vault
+  become: yes
+  command: yum -y install vault
+
+- name: Get postgres IP
+  set_fact:
+    pg_ip: "{{ groups['pg'][0] }}"
+
+- name: Create vault config
+  become: true
+  template:
+    src: vault.hcl.j2
+    dest: /etc/vault.d/vault.hcl
+
+#- name: Copy cert
+#  become: true
+#  ansible.builtin.copy:
+#    src: "{{ node_name }}-cert.pem"
+#    dest: /opt/vault/tls/tls.crt
+#    owner: vault
+#    group: vault
+#    mode: '0600'
+#- name: Copy key
+#  become: true
+#  ansible.builtin.copy:
+#    src: "{{ node_name }}-key.pem"
+#    dest: /opt/vault/tls/tls.key
+#    owner: vault
+#    group: vault
+#    mode: '0600'
+
+- name: Enable and start vault
+  become: true
+  shell: 'systemctl enable vault && systemctl restart vault'
+
+...

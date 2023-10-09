@@ -1,0 +1,92 @@
+---
+
+- name: Wait for system to become reachable
+  ansible.builtin.wait_for_connection:
+- name: Set a hostname specifying strategy
+  become: true
+  ansible.builtin.hostname:
+    name: "{{ node_name }}"
+    use: systemd
+- name: Uname
+  command: uname -a
+- name: Install postgresql
+  become: true
+  dnf:
+    state: latest
+    name: postgresql-server
+    disable_gpg_check: true
+- name: Initdb
+  become: true
+  shell:
+    cmd: /usr/bin/postgresql-setup --initdb && touch /var/lib/pgsql/ansible__pg_init
+    creates: /var/lib/pgsql/ansible__pg_init
+- name: Configure pg
+  become: true
+  ansible.builtin.lineinfile:
+    path: /var/lib/pgsql/data/postgresql.conf
+    regexp: "^#listen_addresses "
+    line: "listen_addresses = '*'"
+- name: Configure pg
+  become: true
+  ansible.builtin.lineinfile:
+    path: /var/lib/pgsql/data/pg_hba.conf
+    line: "host    all             all             0.0.0.0/0            md5"
+# TODO: handler + flush_handlers heere
+- name: Enable and start postgresql
+  become: true
+  shell: 'systemctl enable postgresql && systemctl restart postgresql'
+
+- name: Create pg user
+  become: true
+  become_user: postgres
+  shell:
+    cmd: psql -c "CREATE USER vault WITH PASSWORD 'vault';" && touch /var/lib/pgsql/ansible__pg_vault_user
+    creates: /var/lib/pgsql/ansible__pg_vault_user
+- name: Create vault database
+  become: true
+  become_user: postgres
+  shell: 
+    cmd: psql -c "CREATE DATABASE vault OWNER vault;" && touch /var/lib/pgsql/ansible__pg_vault_db
+    creates: /var/lib/pgsql/ansible__pg_vault_db
+
+  # https://developer.hashicorp.com/vault/docs/configuration/storage/postgresql
+- name: Create kv table
+  become: true
+  become_user: postgres
+  shell:
+    cmd: |
+      psql vault -c 'CREATE TABLE vault_kv_store (
+          parent_path TEXT COLLATE "C" NOT NULL,
+          path        TEXT COLLATE "C",
+          key         TEXT COLLATE "C",
+          value       BYTEA,
+          CONSTRAINT pkey PRIMARY KEY (path, key)
+        );' && touch /var/lib/pgsql/ansible__pg_vault_t1
+    creates: /var/lib/pgsql/ansible__pg_vault_t1
+- name: Create index for kv table
+  become: true
+  become_user: postgres
+  shell:
+    cmd: psql vault -c 'CREATE INDEX parent_path_idx ON vault_kv_store (parent_path);' && touch /var/lib/pgsql/ansible__pg_vault_t1i
+    creates: /var/lib/pgsql/ansible__pg_vault_t1i
+- name: Create ha table
+  become: true
+  become_user: postgres
+  shell:
+    cmd: psql vault -c 'CREATE TABLE vault_ha_locks (
+             ha_key                                      TEXT COLLATE "C" NOT NULL,
+             ha_identity                                 TEXT COLLATE "C" NOT NULL,
+             ha_value                                    TEXT COLLATE "C",
+             valid_until                                 TIMESTAMP WITH TIME ZONE NOT NULL,
+             CONSTRAINT ha_key PRIMARY KEY (ha_key)
+           );' && touch /var/lib/pgsql/ansible__pg_vault_t2
+    creates: /var/lib/pgsql/ansible__pg_vault_t2
+- name: Fix tables rights
+  become: true
+  become_user: postgres
+  shell:
+    cmd: psql vault -c 'GRANT ALL on vault_kv_store to vault; GRANT ALL on vault_ha_locks to vault;' && touch /var/lib/pgsql/ansible__pg_vault_t1-2f
+    creates: /var/lib/pgsql/ansible__pg_vault_t1-2f
+
+
+...

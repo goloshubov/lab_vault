@@ -1,0 +1,37 @@
+---
+
+- name: Wait for system to become reachable
+  ansible.builtin.wait_for_connection:
+- name: Set a hostname specifying strategy
+  become: true
+  ansible.builtin.hostname:
+    name: "{{ node_name }}"
+    use: systemd
+- name: Uname
+  command: uname -a
+- name: Install haproxy
+  become: true
+  dnf:
+    state: latest
+    name: haproxy
+    disable_gpg_check: true
+
+- name: Create haproxy config
+  become: true
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+
+- name: Set haproxy_connect_any selinux boolean
+  become: true
+  ansible.posix.seboolean:
+    name: haproxy_connect_any
+    state: true
+    persistent: true
+
+# TODO: handler
+- name: Enable and start haproxy
+  become: true
+  shell: 'systemctl enable haproxy && systemctl restart haproxy'
+
+...
