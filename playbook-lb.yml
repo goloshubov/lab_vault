@@ -3,7 +3,12 @@
 - name: Install lb
   hosts: lb
   gather_facts: false
-  roles:
-    - lb
+#  roles:
+#    - lb
+  tasks:
+    - name: Wait for system to become reachable
+      ansible.builtin.wait_for_connection:
+    - name: Uname
+      command: uname -a
 
 ...

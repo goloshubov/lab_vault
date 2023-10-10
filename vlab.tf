@@ -1,6 +1,7 @@
 resource "libvirt_cloudinit_disk" "commoninit" {
   name      = "commoninit.iso"
   user_data = data.template_file.user_data.rendered
+  pool = var.pg.disk_pool
 }
 
 data "template_file" "user_data" {
@@ -48,9 +49,14 @@ resource "local_file" "hosts-pg" {
       node_group    = "pg"
       nodes = { for n in libvirt_domain.vaultlab-pg: "${n.name}" => n.network_interface[0].addresses[0] }
   })
+}
+resource "terraform_data" "ansible-pg" {
+  triggers_replace = [
+    local_file.hosts-pg.content_md5
+  ]
 
   provisioner "local-exec" {
-      command = "ANSIBLE_HOST_KEY_CHECKING=0 ANSIBLE_FORCE_COLOR=1 ansible-playbook -i inventories/ playbook-pg.yml -vv"
+    command = "ANSIBLE_HOST_KEY_CHECKING=0 ANSIBLE_FORCE_COLOR=1 ansible-playbook -i inventories/ playbook-pg.yml -vv"
   }
 }
 
@@ -93,14 +99,20 @@ resource "local_file" "hosts-vault" {
       node_group    = "vault"
       nodes = { for n in libvirt_domain.vaultlab-vault: "${n.name}" => n.network_interface[0].addresses[0] }
   })
+}
+resource "terraform_data" "ansible-vault" {
+  depends_on = [
+    terraform_data.ansible-pg
+  ]
+
+  triggers_replace = [
+    local_file.hosts-vault.content_md5,
+    terraform_data.ansible-pg
+  ]
 
   provisioner "local-exec" {
-      command = "ANSIBLE_HOST_KEY_CHECKING=0 ANSIBLE_FORCE_COLOR=1 ansible-playbook -i inventories/ playbook-vault.yml -v"
+    command = "ANSIBLE_HOST_KEY_CHECKING=0 ANSIBLE_FORCE_COLOR=1 ansible-playbook -i inventories/ playbook-vault.yml -v"
   }
-
-  depends_on = [
-   local_file.hosts-pg
-  ]
 }
 
 
@@ -143,12 +155,18 @@ resource "local_file" "hosts-lb" {
       node_group    = "lb"
       nodes = { for n in libvirt_domain.vaultlab-lb: "${n.name}" => n.network_interface[0].addresses[0] }
   })
+}
+resource "terraform_data" "ansible-lb" {
+  depends_on = [
+    terraform_data.ansible-vault
+  ]
+
+  triggers_replace = [
+    local_file.hosts-lb.content_md5,
+    terraform_data.ansible-vault
+  ]
 
   provisioner "local-exec" {
     command = "ANSIBLE_HOST_KEY_CHECKING=0 ANSIBLE_FORCE_COLOR=1 ansible-playbook -i inventories/ playbook-lb.yml -v"
   }
-
-  depends_on = [
-   local_file.hosts-vault
-  ]
 }

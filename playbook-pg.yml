@@ -3,7 +3,12 @@
 - name: Install pg
   hosts: pg
   gather_facts: false
-  roles:
-    - pg
+#  roles:
+#    - pg
+  tasks:
+    - name: Wait for system to become reachable
+      ansible.builtin.wait_for_connection:
+    - name: Uname
+      command: uname -a
 
 ...

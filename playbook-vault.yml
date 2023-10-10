@@ -3,7 +3,12 @@
 - name: Install vault
   hosts: vault
   gather_facts: false
-  roles:
-    - vault
+#  roles:
+#    - vault
+  tasks:
+    - name: Wait for system to become reachable
+      ansible.builtin.wait_for_connection:
+    - name: Uname
+      command: uname -a
 
 ...
