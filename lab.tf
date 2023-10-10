@@ -1,7 +1,7 @@
 resource "libvirt_cloudinit_disk" "commoninit" {
   name      = "commoninit.iso"
   user_data = data.template_file.user_data.rendered
-  pool = var.pg.disk_pool
+  pool      = var.pg.disk_pool
 }
 
 data "template_file" "user_data" {
