@@ -52,7 +52,7 @@ resource "local_file" "hosts-pg" {
 }
 resource "terraform_data" "ansible-pg" {
   triggers_replace = [
-    local_file.hosts-pg.content_md5
+    local_file.hosts-pg
   ]
 
   provisioner "local-exec" {
@@ -106,7 +106,7 @@ resource "terraform_data" "ansible-vault" {
   ]
 
   triggers_replace = [
-    local_file.hosts-vault.content_md5,
+    local_file.hosts-vault,
     terraform_data.ansible-pg
   ]
 
@@ -162,7 +162,7 @@ resource "terraform_data" "ansible-lb" {
   ]
 
   triggers_replace = [
-    local_file.hosts-lb.content_md5,
+    local_file.hosts-lb,
     terraform_data.ansible-vault
   ]
 
