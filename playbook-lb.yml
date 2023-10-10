@@ -3,8 +3,6 @@
 - name: Install lb
   hosts: lb
   gather_facts: false
-  vars:
-    ansible_user: ansible
   roles:
     - lb
 

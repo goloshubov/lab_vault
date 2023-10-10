@@ -13,7 +13,7 @@ data "template_file" "user_data" {
 resource "libvirt_volume" "vaultlab-pg-disk" {
   count = var.pg.count
   name = "vaultlab-pg-disk-${count.index}"
-  pool = "ST1000DM003"
+  pool = var.pg.disk_pool
   size = var.pg.disk_size
   base_volume_name = var.pg.disk_base
 }
