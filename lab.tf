@@ -101,9 +101,9 @@ resource "local_file" "hosts-vault" {
   })
 }
 resource "terraform_data" "ansible-vault" {
-  depends_on = [
-    terraform_data.ansible-pg
-  ]
+#  depends_on = [
+#    terraform_data.ansible-pg
+#  ]
 
   triggers_replace = [
     local_file.hosts-vault,
@@ -157,9 +157,9 @@ resource "local_file" "hosts-lb" {
   })
 }
 resource "terraform_data" "ansible-lb" {
-  depends_on = [
-    terraform_data.ansible-vault
-  ]
+#  depends_on = [
+#    terraform_data.ansible-vault
+#  ]
 
   triggers_replace = [
     local_file.hosts-lb,
