@@ -2,13 +2,16 @@
 
 - name: Wait for system to become reachable
   ansible.builtin.wait_for_connection:
+
 - name: Set a hostname specifying strategy
   become: true
   ansible.builtin.hostname:
     name: "{{ node_name }}"
     use: systemd
+
 - name: Uname
   command: uname -a
+
 - name: Install haproxy
   become: true
   dnf:
